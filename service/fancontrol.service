@@ -1,0 +1,13 @@
+[Unit]
+Description=Fan Speed Control Service
+DefaultDependencies=no
+
+[Service]
+Type=simple
+User=root
+ExecStart=/home/pi/src/repos/fancontrol/fancontrol.py
+ExecStop=/bin/kill -s SIGINT $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
