@@ -59,7 +59,7 @@ def main():
             print(f"[PWM] Temp: {temp_current}"
                   f" | TempDelta: {temp_delta}"
                   f" | RPM: {rpm} (DC: {dc}%)"
-                  f" | Cycles {cycles}", file=sys.stderr)
+                  f" | Cycles: {cycles}", file=sys.stderr)
             sleep(float(WAIT) / 1000)
     except KeyboardInterrupt:
         fan.stop()
