@@ -1,3 +1,4 @@
 #!/bin/sh
-source .venv/bin/activate
-exec fancontrol.py
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+source "$SCRIPT_DIR/.venv/bin/activate"
+exec "$SCRIPT_DIR/fancontrol.py"
