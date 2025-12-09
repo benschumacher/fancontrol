@@ -5,7 +5,7 @@ DefaultDependencies=no
 [Service]
 Type=simple
 User=root
-ExecStart=/home/pi/src/repos/fancontrol/fancontrol.py
+ExecStart=/home/pi/src/repos/fancontrol/fancontrol.sh
 ExecStop=/bin/kill -s SIGINT $MAINPID
 Restart=on-failure
 

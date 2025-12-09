@@ -1,4 +1,4 @@
-#!/usr/bin/env /home/pi/src/repos/fancontrol/env/bin/python3
+#!/usr/bin/env python3
 import re
 import sys
 
