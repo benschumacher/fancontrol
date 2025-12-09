@@ -5,8 +5,29 @@ import configparser
 import logging
 from time import sleep
 import os
+import argparse
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    # Create a mock GPIO object if RPi.GPIO is not available
+    # This allows the script to be imported and tested on non-Raspberry Pi devices
+    class MockGPIO:
+        BCM = None
+        OUT = None
+        def setmode(self, mode): pass
+        def setwarnings(self, flag): pass
+        def setup(self, pin, direction): pass
+        def PWM(self, pin, freq): return self._MockPWM()
+
+        class _MockPWM:
+            def __init__(self): pass
+            def start(self, dc): pass
+            def ChangeDutyCycle(self, dc): pass
+            def stop(self): pass
+    
+    GPIO = MockGPIO()
+    logging.warning("RPi.GPIO not found. Running in mock GPIO mode.")
 
 class FanController:
     def __init__(self, config_path='config.ini'):
@@ -155,12 +176,63 @@ class FanController:
         self.fan.stop()
         GPIO.cleanup()
 
+def discover_duty_cycle(config_path='config.ini'):
+    # This function is intended to be run on a Raspberry Pi to test the fan.
+    config = configparser.ConfigParser()
+    config['fan'] = {'pin': '12', 'pwm_freq': '100'}
+    if os.path.exists(config_path):
+        config.read(config_path)
+    
+    fan_pin = config.getint('fan', 'pin')
+    pwm_freq = config.getint('fan', 'pwm_freq')
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(fan_pin, GPIO.OUT)
+    fan = GPIO.PWM(fan_pin, pwm_freq)
+    fan.start(0)
+
+    print("--- Fan Analyzer ---")
+    print("Enter a duty cycle (0-100) to test the fan.")
+    print("Enter 'q' to quit.")
+
+    try:
+        while True:
+            dc_input = input("Duty Cycle: ")
+            if dc_input.lower() == 'q':
+                break
+            
+            try:
+                dc = int(dc_input)
+                if 0 <= dc <= 100:
+                    fan.ChangeDutyCycle(dc)
+                    print(f"Fan speed set to {dc}%")
+                else:
+                    print("Invalid input. Please enter a value between 0 and 100.")
+            except ValueError:
+                print("Invalid input. Please enter a number or 'q'.")
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("\nStopping fan and cleaning up GPIO.")
+        fan.stop()
+        GPIO.cleanup()
+
 def main():
-    # Find config file in the same directory as the script
+    parser = argparse.ArgumentParser(description="A script to control a cooling fan for a Raspberry Pi.")
+    parser.add_argument('--discover-duty-cycle', action='store_true', help='Run a tool to discover the minimum duty cycle to start the fan.')
+    args = parser.parse_args()
+
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(script_dir, 'config.ini')
-    controller = FanController(config_path=config_path)
-    controller.run()
+
+    if args.discover_duty_cycle:
+        discover_duty_cycle(config_path=config_path)
+    else:
+        controller = FanController(config_path=config_path)
+        controller.run()
+
 
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
